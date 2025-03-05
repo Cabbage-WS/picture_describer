@@ -7,7 +7,7 @@ import tts
 
 os.environ['NUMPY_EXPERIMENTAL_ARRAY_FUNCTION'] = '0'
 import gradio as gr
-
+import message_constructor
 # 增强日志记录
 logging.basicConfig(
     level=logging.DEBUG,
@@ -16,6 +16,21 @@ logging.basicConfig(
 
 def is_picture(file_name):
     return file_name.split(".")[-1].lower() in ["jpg", "png", "jpeg"]
+
+
+class ChatHistory:
+
+    def __init__(self):
+        self.history = []
+
+    def add_message(self, message):
+        self.history.append(message)
+
+    def get_history(self):
+        return self.history
+
+
+chat_history = ChatHistory()
 
 
 def slow_echo(message, history):
@@ -32,17 +47,34 @@ def slow_echo(message, history):
                 f"但是当前收到的文件名是：{message['files'][0]}"
 
         picture_path = message["files"][0]
-        picture_description = picture_describer.describe_picture(
-            picture_path, text=message["text"])
+        picture_description, message = picture_describer.describe_picture(
+            picture_path,
+            text=message["text"],
+            history=chat_history.get_history())
+
+        chat_history.add_message(message)
+        chat_history.add_message(
+            message_constructor.construct_text_message(picture_description))
+
         yield picture_description
 
         audio_path = tts.tts(picture_description)
         yield [gr.Audio(audio_path), picture_description]
         return
 
-    yield f"我听到你刚才说：{message['text']}"
+    #yield f"我听到你刚才说：{message['text']}"
 
-    print(f"history: {history}")
+    # Input is text
+    reply_text, reply_message = picture_describer.reply_text(
+        message["text"], chat_history.get_history())
+
+    chat_history.add_message(
+        message_constructor.construct_text_message(message["text"]))
+    chat_history.add_message(reply_message)
+
+    yield reply_text
+
+    #print(f"history: {history}")
 
 
 demo = gr.ChatInterface(
