@@ -10,7 +10,7 @@ import gradio as gr
 import message_constructor
 # 增强日志记录
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
@@ -22,6 +22,8 @@ class ChatHistory:
 
     def __init__(self):
         self.history = []
+        SYSTEM_PROMPT = "Please use English in the conversation."
+        self.add_message(message_constructor.construct_text_message(text=SYSTEM_PROMPT, role="assistant"))
 
     def add_message(self, message):
         self.history.append(message)
@@ -54,7 +56,7 @@ def slow_echo(message, history):
 
         chat_history.add_message(message)
         chat_history.add_message(
-            message_constructor.construct_text_message(picture_description))
+            message_constructor.construct_text_message(picture_description, role="assistant"))
 
         yield picture_description
 
@@ -73,13 +75,15 @@ def slow_echo(message, history):
     chat_history.add_message(reply_message)
 
     yield reply_text
+    audio_path = tts.tts(reply_text)
+    yield [gr.Audio(audio_path), reply_text]
 
-    #print(f"history: {history}")
+    return
 
 
 demo = gr.ChatInterface(
     slow_echo,
-    title="图片描述",
+    title="看图说话",
     multimodal=True,
     type="messages",
     flagging_mode="manual",
