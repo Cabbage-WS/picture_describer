@@ -35,21 +35,22 @@ class ChatHistory:
 chat_history = ChatHistory()
 
 
-def slow_echo(message, history):
+def get_response(message, history):
 
-    print(f"history: {history}")
-    print(f"message: {message}")
+    logging.debug(f"history: {history}")
+    logging.debug(f"message: {message}")
 
     if not message:
-        return "请输入有效的消息。"
+        return "The message is empty."
 
+    # Case 1: The user uploads a picture.
     if message["files"]:
         if len(message["files"]) > 1 or not is_picture(message["files"][0]):
-            return f"当前支持每次对话只上传一张图片（格式为jpg, png或jpeg）。" + \
-                f"但是当前收到的文件名是：{message['files'][0]}"
+            return f"I can only receive one picture (jpg, png, or jpeg) each time. " + \
+                f"But the file name is: {message['files'][0]}"
 
         picture_path = message["files"][0]
-        picture_description, message = picture_describer.describe_picture(
+        picture_description, message = picture_describer.reply2picture(
             picture_path,
             text=message["text"],
             history=chat_history.get_history())
@@ -66,8 +67,8 @@ def slow_echo(message, history):
 
     #yield f"我听到你刚才说：{message['text']}"
 
-    # Input is text
-    reply_text, reply_message = picture_describer.reply_text(
+    # Case 2: The user sends a text message.
+    reply_text, reply_message = picture_describer.reply2text(
         message["text"], chat_history.get_history())
 
     chat_history.add_message(
@@ -82,7 +83,7 @@ def slow_echo(message, history):
 
 
 demo = gr.ChatInterface(
-    slow_echo,
+    get_response,
     title="看图说话",
     multimodal=True,
     type="messages",
