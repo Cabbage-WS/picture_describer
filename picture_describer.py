@@ -8,9 +8,9 @@ from openai import OpenAI
 
 import message_constructor
 
-load_dotenv(".env")
-
 logger = logging.getLogger(__name__)
+
+load_dotenv(".env")
 
 
 def _chat_completion(client, model, messages, service_type="Conversation"):
@@ -26,29 +26,27 @@ def _chat_completion(client, model, messages, service_type="Conversation"):
         response_content: API response content or error message
     """
     try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=512
-        )
+        response = client.chat.completions.create(model=model,
+                                                  messages=messages,
+                                                  max_tokens=512)
         return response.choices[0].message.content
     except HTTPStatusError as e:
         logger.error(f"API request failed: {str(e)}")
         return f"Sorry, the {service_type} service is temporarily unavailable. " \
             + f"(Error: {e.response.status_code} - {e.response.text})"
     except Exception as e:
-        logger.error(f"Unknown error occurred while processing {service_type}: {str(e)}")
+        logger.error(
+            f"Unknown error occurred while processing {service_type}: {str(e)}"
+        )
         return f"Sorry, there was a problem processing your {service_type}, please try again later."
 
 
-def reply2picture(
-    picture_path,
-    text="Please describe the image in detail.",
-    history=[],
-    base_url=os.getenv("VISUAL_BASE_URL"),
-    api_key=os.getenv("VISUAL_API_KEY"),
-    model=os.getenv("VISUAL_MODEL")):
-
+def reply2picture(picture_path,
+                  text="Please describe the image in detail.",
+                  history=[],
+                  base_url=os.getenv("VISUAL_BASE_URL"),
+                  api_key=os.getenv("VISUAL_API_KEY"),
+                  model=os.getenv("VISUAL_MODEL")):
     """Calls the OpenAI client to describe the input image.
 
     Returns:
@@ -61,14 +59,14 @@ def reply2picture(
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
     client = OpenAI(api_key=api_key, base_url=base_url)
-    message = message_constructor.construct_image_message(base64_image, text, role="user")
-    
-    response_content = _chat_completion(
-        client, 
-        model, 
-        history + [message], 
-        service_type="Image processing"
-    )
+    message = message_constructor.construct_image_message(base64_image,
+                                                          text,
+                                                          role="user")
+
+    response_content = _chat_completion(client,
+                                        model,
+                                        history + [message],
+                                        service_type="Image processing")
     return response_content, message
 
 
@@ -77,7 +75,6 @@ def reply2text(text,
                base_url=os.getenv("VISUAL_BASE_URL"),
                api_key=os.getenv("VISUAL_API_KEY"),
                model=os.getenv("VISUAL_MODEL")):
-
     """Calls the OpenAI client to reply the input text.
 
     Returns:
@@ -87,10 +84,8 @@ def reply2text(text,
     client = OpenAI(api_key=api_key, base_url=base_url)
     message = message_constructor.construct_text_message(text, role="user")
 
-    response_content = _chat_completion(
-        client, 
-        model, 
-        history + [message], 
-        service_type="Conversation"
-    )
+    response_content = _chat_completion(client,
+                                        model,
+                                        history + [message],
+                                        service_type="Conversation")
     return response_content, message
